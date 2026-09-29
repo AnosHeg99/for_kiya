@@ -464,7 +464,7 @@ export const MASTER_SCENES: Record<string, SceneBlueprint> = {
     },
     bgMusic: {
       trackKey: MASTER_BGM_CONFIG.id,
-      volumeBalance: 0.65,
+      volumeBalance: 0.88,
       harmonicPadMode: 'luminous',
     },
     typography: {
@@ -512,7 +512,7 @@ export const MASTER_SCENES: Record<string, SceneBlueprint> = {
     },
     bgMusic: {
       trackKey: MASTER_BGM_CONFIG.id,
-      volumeBalance: 0.75,
+      volumeBalance: 0.92,
       harmonicPadMode: 'warm',
     },
     typography: {
@@ -560,7 +560,7 @@ export const MASTER_SCENES: Record<string, SceneBlueprint> = {
     },
     bgMusic: {
       trackKey: MASTER_BGM_CONFIG.id,
-      volumeBalance: 0.78,
+      volumeBalance: 0.94,
       harmonicPadMode: 'crystal',
     },
     typography: {
@@ -608,7 +608,7 @@ export const MASTER_SCENES: Record<string, SceneBlueprint> = {
     },
     bgMusic: {
       trackKey: MASTER_BGM_CONFIG.id,
-      volumeBalance: 0.80,
+      volumeBalance: 0.95,
       harmonicPadMode: 'gentle',
     },
     typography: {
@@ -656,7 +656,7 @@ export const MASTER_SCENES: Record<string, SceneBlueprint> = {
     },
     bgMusic: {
       trackKey: MASTER_BGM_CONFIG.id,
-      volumeBalance: 0.75,
+      volumeBalance: 0.92,
       harmonicPadMode: 'warm',
     },
     typography: {
@@ -704,7 +704,7 @@ export const MASTER_SCENES: Record<string, SceneBlueprint> = {
     },
     bgMusic: {
       trackKey: MASTER_BGM_CONFIG.id,
-      volumeBalance: 0.85,
+      volumeBalance: 0.98,
       harmonicPadMode: 'luminous',
     },
     typography: {
