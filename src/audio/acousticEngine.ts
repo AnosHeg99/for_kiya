@@ -62,7 +62,7 @@ class AcousticEngine {
 
       // Create ambient pad bus
       this.padGain = this.ctx.createGain();
-      this.padGain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+      this.padGain.gain.setValueAtTime(0.24, this.ctx.currentTime);
       this.padGain.connect(this.masterGain);
 
       // Create gentle vinyl warmth
@@ -82,19 +82,23 @@ class AcousticEngine {
     if (!this.ctx || !this.masterGain) return;
 
     if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+      void this.ctx.resume();
     }
 
+    const customUrl = MASTER_BGM_CONFIG.customAudioUrl?.trim();
+
+    // 1. JIKA ADA BGM KUSTOM: Prioritaskan dan putar BGM kustom
+    if (customUrl && customUrl !== '') {
+      this.startConfiguredBgm();
+      return;
+    }
+
+    // 2. JIKA KOSONG: Putar instrumen procedural bawaan
     if (!this.isPlaying) {
       this.isPlaying = true;
-      // Gentle 4-second fade in for the procedural engine.
-      this.masterGain.gain.linearRampToValueAtTime(0.75, this.ctx.currentTime + MASTER_BGM_CONFIG.fadeInDurationSec);
-
-      // Prefer a user-provided BGM file when configured.
-      // When no external URL is configured (''), keep the existing procedural BGM.
-      if (!this.startConfiguredBgm()) {
-        this.startProceduralBgm();
-      }
+      const targetVol = Math.max(0, Math.min(1, MASTER_BGM_CONFIG.volume ?? 0.92));
+      this.masterGain.gain.linearRampToValueAtTime(targetVol, this.ctx.currentTime + (MASTER_BGM_CONFIG.fadeInDurationSec || 3.0));
+      this.startProceduralBgm();
     }
   }
 
@@ -123,7 +127,7 @@ class AcousticEngine {
     filter.frequency.setValueAtTime(480, this.ctx.currentTime);
 
     this.noiseGain = this.ctx.createGain();
-    this.noiseGain.gain.setValueAtTime(0.045, this.ctx.currentTime);
+    this.noiseGain.gain.setValueAtTime(0.04, this.ctx.currentTime);
 
     whiteNoise.connect(filter);
     filter.connect(this.noiseGain);
@@ -135,8 +139,7 @@ class AcousticEngine {
   /**
    * Starts the configured external BGM, if one exists.
    * The HTMLAudioElement itself owns the infinite loop so the track restarts
-   * automatically when it reaches the end. If playback is rejected by the
-   * browser/environment, the engine falls back to the procedural BGM.
+   * automatically when it reaches the end.
    */
   private startConfiguredBgm(): boolean {
     if (typeof window === 'undefined') return false;
@@ -149,32 +152,28 @@ class AcousticEngine {
         this.bgmAudio = new Audio(url);
         this.bgmAudio.preload = 'auto';
 
-        this.bgmAudio.addEventListener('error', () => {
-          // External BGM failed to load; fall back to the procedural engine.
-          if (!this.isPlaying) return;
-          this.startProceduralBgm();
-        });
-
         this.bgmAudio.addEventListener('ended', () => {
-          // loop=true normally makes the browser restart automatically.
-          // This explicit safeguard handles environments that do not honor it.
-          if (!this.isPlaying || !this.bgmAudio || !MASTER_BGM_CONFIG.loop) return;
+          if (!this.bgmAudio || !MASTER_BGM_CONFIG.loop) return;
           this.bgmAudio.currentTime = 0;
           void this.bgmAudio.play().catch(() => {});
         });
       }
 
       this.bgmAudio.loop = MASTER_BGM_CONFIG.loop;
-      this.bgmAudio.volume = Math.max(0, Math.min(1, MASTER_BGM_CONFIG.volume));
+      this.bgmAudio.volume = Math.max(0, Math.min(1, MASTER_BGM_CONFIG.volume ?? 0.92));
 
       const playPromise = this.bgmAudio.play();
       if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch(() => {
-          // Browser autoplay policy or a loading issue: use procedural BGM instead.
-          if (this.isPlaying) {
-            this.startProceduralBgm();
-          }
-        });
+        playPromise
+          .then(() => {
+            this.isPlaying = true;
+            // Ketika MP3 berhasil berputar, pastikan instrumen bawaan dimatikan
+            this.stopProceduralBgm();
+          })
+          .catch(() => {
+            // Autoplay ditahan browser sebelum klik pengguna.
+            // Tidak perlu fallback ke instrumen bawaan, biarkan menunggu klik pengguna!
+          });
       }
 
       return true;
@@ -183,8 +182,17 @@ class AcousticEngine {
     }
   }
 
+  private stopProceduralBgm() {
+    if (this.chordTimer !== null) {
+      clearTimeout(this.chordTimer);
+      this.chordTimer = null;
+    }
+    if (this.padGain && this.ctx) {
+      this.padGain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + 0.4);
+    }
+  }
+
   private startProceduralBgm() {
-    // Prevent duplicate procedural loops when an external BGM later fails.
     if (!this.isPlaying || this.chordTimer !== null) return;
     this.playPadCycle();
   }
@@ -683,7 +691,7 @@ class AcousticEngine {
     if (!url || typeof window === 'undefined') return false;
     try {
       const audio = new Audio(url);
-      audio.volume = 0.8;
+      audio.volume = Math.max(0, Math.min(1, MASTER_BGM_CONFIG.volume ?? 0.92));
       audio.play().catch(() => {});
       return true;
     } catch {
@@ -1025,10 +1033,20 @@ class AcousticEngine {
    * Ensures seamless BGM continuity across all scene transitions
    */
   public ensureBgmPlaying() {
+    // Jika BGM kustom sedang terhenti / ditahan autoplay, putar saat scene berganti atau saat klik
+    if (this.bgmAudio) {
+      if (this.bgmAudio.paused) {
+        void this.bgmAudio.play().then(() => {
+          this.isPlaying = true;
+          this.stopProceduralBgm();
+        }).catch(() => {});
+      }
+      return;
+    }
     if (!this.isPlaying || !this.isInitialized) {
       this.activate();
     } else if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume();
+      void this.ctx.resume();
     }
   }
 
