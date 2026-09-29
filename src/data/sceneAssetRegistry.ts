@@ -189,7 +189,7 @@ export const MASTER_BGM_CONFIG = {
   composer: 'Procedural Acoustic Harmonic Engine',
   // Masukkan URL audio kustom di sini jika ingin menggunakan BGM MP3 eksternal:
   customAudioUrl: AUDIO_SOURCES.masterBgm, 
-  volume: 0.75,
+  volume: 1.0,
   loop: true,
   fadeInDurationSec: 3.5,
   fadeOutDurationSec: 2.0,
