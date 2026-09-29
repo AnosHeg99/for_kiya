@@ -30,6 +30,7 @@ import magicalSkyGiftBox from '../assets/images/magical_sky_gift_box_17889409998
 import memoryCardSceneTrain from '../assets/images/memory_card_scene_train_1788941039108.jpg';
 import memoryCardSceneWindow from '../assets/images/memory_card_scene_window_1788941058411.jpg';
 import softSkyblueAnimeSky from '../assets/images/wistoria.jpg';
+import somethingBgm from '../assets/sounds/Something.mp3'; 
 
 export const IMAGE_ASSETS = {
   identitas,
@@ -51,8 +52,8 @@ export const IMAGE_ASSETS = {
 // Isi string dengan path lokal atau URL audio untuk menggantikan procedural audio.
 // Kosong = tetap menggunakan acoustic/procedural engine bawaan.
 export const AUDIO_ASSETS = {
-  masterBgm: '/sounds/Something.mp3',
-
+  masterBgm: somethingBgm,
+  
   hoshineko: {
     greeting: '',
     happy: '',
