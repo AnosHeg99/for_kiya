@@ -21,7 +21,6 @@ class AcousticEngine {
   private isPlaying = false;
   private currentChordIndex = 0;
   private chordTimer: number | null = null;
-  private bgmAudio: HTMLAudioElement | null = null; // <-- 
 
   // Optional external BGM player. When MASTER_BGM_CONFIG.customAudioUrl is set,
   // the external track is used instead of the procedural chord cycle.
@@ -86,32 +85,18 @@ class AcousticEngine {
       this.ctx.resume();
     }
 
-   if (!this.isPlaying) {
+    if (!this.isPlaying) {
       this.isPlaying = true;
-      const targetVolume = Math.min(1.0, MASTER_BGM_CONFIG?.volume ?? 0.92);
-      const customBgm = MASTER_BGM_CONFIG?.customAudioUrl?.trim();
+      // Gentle 4-second fade in for the procedural engine.
+      this.masterGain.gain.linearRampToValueAtTime(0.75, this.ctx.currentTime + MASTER_BGM_CONFIG.fadeInDurationSec);
 
-      // JIKA ADA FILE MP3 KUSTOM: Putar file MP3 tersebut!
-      if (customBgm && customBgm !== '') {
-        try {
-          if (!this.bgmAudio) {
-            this.bgmAudio = new Audio(customBgm);
-            this.bgmAudio.loop = MASTER_BGM_CONFIG.loop !== false;
-            this.bgmAudio.volume = targetVolume;
-          }
-          this.bgmAudio.play().catch(() => {
-            // Jika browser memblokir audio kustom, fallback ke instrumen
-            this.playPadCycle();
-          });
-        } catch {
-          this.playPadCycle();
-        }
-      } else {
-        // JIKA KOSONG: Putar instrumen bawaan
-        this.masterGain.gain.linearRampToValueAtTime(targetVolume, this.ctx.currentTime + 3.0);
-        this.playPadCycle();
+      // Prefer a user-provided BGM file when configured.
+      // When no external URL is configured (''), keep the existing procedural BGM.
+      if (!this.startConfiguredBgm()) {
+        this.startProceduralBgm();
       }
     }
+  }
 
   private setupWarmthWhisper() {
     if (!this.ctx || !this.masterGain) return;
@@ -1039,13 +1024,7 @@ class AcousticEngine {
   /**
    * Ensures seamless BGM continuity across all scene transitions
    */
-public ensureBgmPlaying() {
-    if (this.bgmAudio) {
-      if (this.bgmAudio.paused) {
-        this.bgmAudio.play().catch(() => {});
-      }
-      return;
-    }
+  public ensureBgmPlaying() {
     if (!this.isPlaying || !this.isInitialized) {
       this.activate();
     } else if (this.ctx && this.ctx.state === 'suspended') {
